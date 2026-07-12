@@ -41,7 +41,7 @@ export default function MiniMap({ locationName }: MiniMapProps) {
   }, [locationName]);
 
   return (
-    <div className="bg-white/90 backdrop-blur-md border border-gray-200 shadow-lg rounded-2xl p-3 flex flex-col items-center w-40 pointer-events-auto">
+    <div className="bg-white border border-gray-200 shadow-lg rounded-2xl p-3 flex flex-col items-center w-40 pointer-events-auto">
       <div className="flex items-center gap-1.5 w-full mb-2 border-b border-gray-100 pb-1.5">
         <MapPin size={14} className="text-gray-500" />
         <span className="text-xs font-bold text-gray-700">미니맵</span>

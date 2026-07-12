@@ -190,41 +190,21 @@ export default function HistoryGraph({ nodes, links, onNodeClick, onLinkClick, h
       />
       
       {/* Search Bar & Dropdown */}
-      <div className="absolute top-4 right-4 z-10 flex flex-col w-72" onClick={(e) => e.stopPropagation()}>
-        <form 
-          onSubmit={handleSearch}
-          className="flex items-center bg-white/90 backdrop-blur-md rounded-xl shadow-md border border-gray-200 overflow-hidden w-full"
-        >
-          <input 
-            type="text" 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onFocus={() => { if (searchResults.length > 0) setIsDropdownOpen(true); }}
-            placeholder="노드 검색..."
-            className="flex-1 min-w-0 px-4 py-2 text-sm text-gray-700 bg-transparent outline-none placeholder-gray-400"
-          />
-          <button 
-            type="submit" 
-            className="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 transition-colors border-l border-gray-200 font-medium text-sm whitespace-nowrap flex-shrink-0"
-          >
-            검색
-          </button>
-        </form>
-
-        {/* Dropdown Results */}
+      <div className="absolute bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col w-[65vw] max-w-[270px] md:max-w-[320px]" onClick={(e) => e.stopPropagation()}>
+        {/* Dropdown Results (placed above the input so it opens upwards) */}
         {isDropdownOpen && searchResults.length > 0 && (
-          <div className="w-full mt-2 bg-white/95 backdrop-blur-md rounded-xl shadow-lg border border-gray-200 overflow-hidden text-sm flex flex-col max-h-[300px] overflow-y-auto custom-scrollbar">
+          <div className="w-full mb-2 bg-white/95 backdrop-blur-md rounded-xl shadow-lg border border-gray-200 overflow-hidden text-sm flex flex-col max-h-[30vh] md:max-h-[300px] overflow-y-auto custom-scrollbar">
             {searchResults.slice(0, visibleCount).map((item, idx) => (
               <button
                 key={idx}
                 type="button"
                 onClick={() => handleSelectItem(item)}
-                className="text-left px-4 py-3 hover:bg-blue-50 border-b border-gray-100 last:border-0 transition-colors flex items-center justify-between"
+                className="text-left px-3 py-2.5 md:px-4 md:py-3 hover:bg-blue-50 border-b border-gray-100 last:border-0 transition-colors flex items-center justify-between"
               >
-                <span className="font-medium text-gray-800 truncate pr-2">
+                <span className="font-medium text-gray-800 truncate pr-2 text-xs md:text-sm">
                   {item.data.label}
                 </span>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold whitespace-nowrap ${item.type === 'edge' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                <span className={`text-[9px] md:text-[10px] px-1.5 md:px-2 py-0.5 rounded-full font-bold whitespace-nowrap ${item.type === 'edge' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
                   {item.type === 'edge' ? '관계' : '노드'}
                 </span>
               </button>
@@ -234,7 +214,7 @@ export default function HistoryGraph({ nodes, links, onNodeClick, onLinkClick, h
               <button 
                 type="button"
                 onClick={() => setVisibleCount(prev => prev + 5)}
-                className="w-full py-3 bg-gray-50 hover:bg-gray-100 text-gray-500 font-medium flex items-center justify-center gap-1.5 transition-colors text-xs"
+                className="w-full py-2.5 md:py-3 bg-gray-50 hover:bg-gray-100 text-gray-500 font-medium flex items-center justify-center gap-1.5 transition-colors text-[11px] md:text-xs"
               >
                 더보기 ({searchResults.length - visibleCount}개 남음) 
                 <span className="text-[10px]">▼</span>
@@ -242,6 +222,26 @@ export default function HistoryGraph({ nodes, links, onNodeClick, onLinkClick, h
             )}
           </div>
         )}
+
+        <form 
+          onSubmit={handleSearch}
+          className="flex items-center bg-white/90 backdrop-blur-md rounded-xl shadow-lg border border-gray-200 overflow-hidden w-full"
+        >
+          <input 
+            type="text" 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => { if (searchResults.length > 0) setIsDropdownOpen(true); }}
+            placeholder="노드 검색..."
+            className="flex-1 min-w-0 px-3 py-2 md:px-4 md:py-3 text-sm md:text-base text-gray-700 bg-transparent outline-none placeholder-gray-400"
+          />
+          <button 
+            type="submit" 
+            className="px-3 py-2 md:px-5 md:py-3 bg-blue-50 hover:bg-blue-100 text-blue-600 transition-colors border-l border-gray-200 font-bold text-sm whitespace-nowrap flex-shrink-0"
+          >
+            검색
+          </button>
+        </form>
       </div>
     </div>
   );
