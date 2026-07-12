@@ -162,7 +162,7 @@ export default function Home() {
   const getTargetLabel = (link: any) => typeof link.target === 'object' ? link.target.label : (displayNodes.find(n => n.id === link.target)?.label || link.target);
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 text-gray-900 font-sans overflow-hidden relative">
+    <div className="flex flex-col fixed inset-0 bg-gray-50 text-gray-900 font-sans overflow-hidden">
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 px-3 py-2 md:px-6 md:py-4 flex-shrink-0 shadow-sm z-10 flex justify-between items-center gap-2">
         <div className="flex-1 min-w-0">
