@@ -185,6 +185,7 @@ export default function HistoryGraph({ nodes, links, onNodeClick, onLinkClick, h
         linkWidth={1.5}
         linkDirectionalArrowLength={3.5}
         linkDirectionalArrowRelPos={1}
+        linkHoverPrecision={10}
         onNodeClick={(node, event) => onNodeClick(node as GraphNode, event as MouseEvent)}
         onLinkClick={(link, event) => onLinkClick(link as GraphLink, event as MouseEvent)}
       />

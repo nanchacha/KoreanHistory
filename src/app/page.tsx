@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { rawData, sampleQuiz, GraphNode, GraphLink, QuizData, NodeGroup } from "../data/mockData";
-import { Info, MapPin, User, Bookmark, CheckCircle2, XCircle, X, ChevronRight, Share2 } from "lucide-react";
+import { Info, MapPin, User, Bookmark, CheckCircle2, XCircle, X, ChevronRight, ChevronUp, ChevronDown, Share2 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
 // Dynamically import the ForceGraph component to avoid SSR issues with Canvas
@@ -22,7 +22,7 @@ export default function Home() {
   const [quizzes, setQuizzes] = useState<QuizData[]>([]);
 
   // Quiz UI State
-  const [activeTab, setActiveTab] = useState<'graph' | 'quiz'>('graph');
+  const [activeTab, setActiveTab] = useState<'graph' | 'quiz' | null>('graph');
   const [currentQuizIdx, setCurrentQuizIdx] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [isAnswerChecked, setIsAnswerChecked] = useState(false);
@@ -111,15 +111,21 @@ export default function Home() {
   const currentQuiz = displayQuizzes[currentQuizIdx] || sampleQuiz;
 
   const handleNodeClick = (node: GraphNode, event: MouseEvent) => {
-    setSelectedItem({ type: 'node', data: node });
-    setModalPos({ x: event.clientX, y: event.clientY });
-
     if (node.group === 'place') {
+      // 장소 노드는 지도에 표시되므로 팝업을 띄우지 않음 (열려있다면 닫기)
+      setSelectedItem(null);
+      setModalPos(null);
       setActiveLocation(node.label);
-    } else if (node.properties?.location) {
-      setActiveLocation(node.properties.location);
     } else {
-      setActiveLocation(null);
+      // 장소가 아닌 노드는 팝업 표시
+      setSelectedItem({ type: 'node', data: node });
+      setModalPos({ x: event.clientX, y: event.clientY });
+      
+      if (node.properties?.location) {
+        setActiveLocation(node.properties.location);
+      } else {
+        setActiveLocation(null);
+      }
     }
   };
 
@@ -196,24 +202,26 @@ export default function Home() {
             {/* Tabs */}
             <div className="flex bg-white/90 backdrop-blur-md rounded-xl p-1 md:p-1.5 shadow-md border border-gray-200 pointer-events-auto">
               <button 
-                onClick={() => setActiveTab('graph')}
-                className={`flex-1 py-1.5 md:py-2 text-xs md:text-sm font-bold rounded-lg transition-all ${
+                onClick={() => setActiveTab(activeTab === 'graph' ? null : 'graph')}
+                className={`flex flex-1 items-center justify-center gap-1.5 py-1.5 md:py-2 text-xs md:text-sm font-bold rounded-lg transition-all ${
                   activeTab === 'graph' 
                     ? 'bg-white shadow-sm text-blue-600' 
                     : 'text-gray-500 hover:bg-gray-50'
                 }`}
               >
                 노드 시각화
+                {activeTab === 'graph' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
               </button>
               <button 
-                onClick={() => setActiveTab('quiz')}
-                className={`flex-1 py-1.5 md:py-2 text-xs md:text-sm font-bold rounded-lg transition-all ${
+                onClick={() => setActiveTab(activeTab === 'quiz' ? null : 'quiz')}
+                className={`flex flex-1 items-center justify-center gap-1.5 py-1.5 md:py-2 text-xs md:text-sm font-bold rounded-lg transition-all ${
                   activeTab === 'quiz' 
                     ? 'bg-white shadow-sm text-blue-600' 
                     : 'text-gray-500 hover:bg-gray-50'
                 }`}
               >
                 기출문제 풀이
+                {activeTab === 'quiz' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
               </button>
             </div>
 
@@ -386,7 +394,7 @@ export default function Home() {
           </div>
 
           {/* MiniMap */}
-          <div className="absolute bottom-4 right-3 md:bottom-6 md:right-6 z-10 pointer-events-auto scale-75 md:scale-100 origin-bottom-right">
+          <div className="absolute bottom-20 right-3 md:bottom-6 md:right-6 z-10 pointer-events-auto scale-75 md:scale-100 origin-bottom-right transition-all">
             <MiniMap locationName={activeLocation} />
           </div>
         </section>
