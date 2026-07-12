@@ -118,14 +118,35 @@ export default function Home() {
       setModalPos(null);
       setActiveLocation(node.label);
     } else {
-      // 장소가 아닌 노드는 팝업 표시
+      // 장소 이외의 노드는 선택 상태로 설정
       setSelectedItem({ type: 'node', data: node });
-      setModalPos({ x: event.clientX, y: event.clientY });
       
+      // 사건 노드의 경우 고정된 좌측 하단 패널을 사용하므로, 팝업용 위치값은 저장하지 않아도 무방함
+      // 인물 노드 등을 위해 위치값 저장
+      setModalPos({ x: event?.clientX || window.innerWidth / 2, y: event?.clientY || window.innerHeight / 2 });
+      
+      // 해당 노드에 location 속성이 있으면 바로 사용
       if (node.properties?.location) {
         setActiveLocation(node.properties.location);
       } else {
-        setActiveLocation(null);
+        // 없다면 이 노드와 연결된 모든 노드를 뒤져서 '장소(place)' 노드가 있는지 확인
+        let foundPlaceLabel: string | null = null;
+        
+        for (const edge of displayEdges) {
+          const sourceId = typeof edge.source === 'object' ? (edge.source as any).id : edge.source;
+          const targetId = typeof edge.target === 'object' ? (edge.target as any).id : edge.target;
+          
+          if (sourceId === node.id || targetId === node.id) {
+            const otherNodeId = sourceId === node.id ? targetId : sourceId;
+            const otherNode = displayNodes.find(n => n.id === otherNodeId);
+            if (otherNode && otherNode.group === 'place') {
+              foundPlaceLabel = otherNode.label;
+              break; // 장소를 찾으면 루프 종료
+            }
+          }
+        }
+        
+        setActiveLocation(foundPlaceLabel);
       }
     }
   };
@@ -407,6 +428,49 @@ export default function Home() {
             </span>
           </div>
 
+          {/* Event Details Panel (Bottom Left) */}
+          {selectedItem?.type === 'node' && selectedItem.data.group === 'event' && (
+            <div className="absolute bottom-4 left-3 md:bottom-6 md:left-6 w-64 md:w-80 bg-white/95 backdrop-blur-xl border border-gray-200 shadow-2xl rounded-xl md:rounded-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-bottom-4 duration-300 pointer-events-auto">
+              <button 
+                onClick={closeModal}
+                className="absolute top-2 right-2 md:top-3 md:right-3 bg-black/50 text-white hover:bg-black/70 transition-colors p-1 md:p-1.5 rounded-full z-10"
+              >
+                <X className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              </button>
+              
+              <div className="relative h-32 md:h-40 w-full bg-gray-200">
+                <img 
+                  src="/historical_event.png" 
+                  alt="Historical Event" 
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/80 to-transparent p-3 pt-8">
+                  <h3 className="text-white font-bold text-sm md:text-base">
+                    {selectedItem.data.label.replace('\n', ' ')}
+                  </h3>
+                  {selectedItem.data.properties?.year && (
+                    <span className="text-amber-300 text-[10px] md:text-xs font-semibold">
+                      {selectedItem.data.properties.year}년
+                    </span>
+                  )}
+                </div>
+              </div>
+              
+              <div className="p-3 md:p-4">
+                <p className="text-xs md:text-sm text-gray-700 leading-relaxed mb-3">
+                  {selectedItem.data.properties?.summary || "상세 설명이 없습니다."}
+                </p>
+                
+                {activeLocation && (
+                  <div className="flex items-center gap-1.5 text-[10px] md:text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                    <MapPin size={12} className="text-green-600" />
+                    관련 장소: <span className="font-semibold text-gray-700">{activeLocation}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* MiniMap */}
           <div className="absolute bottom-20 right-3 md:bottom-6 md:right-6 z-10 pointer-events-auto scale-75 md:scale-100 origin-bottom-right transition-all">
             <MiniMap locationName={activeLocation} />
@@ -414,8 +478,8 @@ export default function Home() {
         </section>
       </main>
 
-      {/* Details Popup Modal positioned globally */}
-      {selectedItem && modalPos && (
+      {/* Details Popup Modal positioned globally (Only for non-event items) */}
+      {selectedItem && modalPos && !(selectedItem.type === 'node' && selectedItem.data.group === 'event') && (
         <div 
           className="fixed bg-white/95 backdrop-blur-xl border border-gray-200 shadow-xl rounded-xl md:rounded-2xl p-4 md:p-6 w-[260px] md:w-80 z-[100] animate-in fade-in zoom-in-95 duration-200 pointer-events-auto"
           style={{ 
