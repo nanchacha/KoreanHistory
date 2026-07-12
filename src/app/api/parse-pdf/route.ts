@@ -2,10 +2,29 @@ import { NextRequest, NextResponse } from "next/server";
 import { VertexAI } from "@google-cloud/vertexai";
 import pdfParse from "pdf-parse";
 
-// Setup Vertex AI (Using credentials loaded from GOOGLE_APPLICATION_CREDENTIALS)
+// Setup Vertex AI
 const project = "koreanhistory-502203";
 const location = "us-central1"; // Commonly used region for Gemini in Vertex AI
-const vertexAI = new VertexAI({ project, location });
+
+let vertexAI: VertexAI;
+
+// Support Vercel deployment via JSON string environment variable
+if (process.env.GOOGLE_CREDENTIALS_JSON) {
+  try {
+    const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
+    vertexAI = new VertexAI({ 
+      project, 
+      location,
+      googleAuthOptions: { credentials }
+    });
+  } catch (err) {
+    console.error("Failed to parse GOOGLE_CREDENTIALS_JSON", err);
+    vertexAI = new VertexAI({ project, location }); // Fallback
+  }
+} else {
+  // Local development fallback using GOOGLE_APPLICATION_CREDENTIALS file
+  vertexAI = new VertexAI({ project, location });
+}
 
 export async function POST(req: NextRequest) {
   try {
