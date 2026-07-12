@@ -125,11 +125,10 @@ export default function HistoryGraph({ nodes, links, onNodeClick, onLinkClick, h
     if (!searchQuery.trim()) return [];
     const query = searchQuery.toLowerCase();
     
-    const matchingEdges = links.filter(l => l.label && l.label.toLowerCase().includes(query)).map(l => ({ type: 'edge', data: l }));
     const matchingNodes = nodes.filter(n => n.label.toLowerCase().includes(query)).map(n => ({ type: 'node', data: n }));
     
-    return [...matchingEdges, ...matchingNodes];
-  }, [searchQuery, links, nodes]);
+    return matchingNodes;
+  }, [searchQuery, nodes]);
 
   useEffect(() => {
     setVisibleCount(5);
