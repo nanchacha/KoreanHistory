@@ -166,68 +166,7 @@ export default function Home() {
         {/* Left Panel */}
         <aside className="w-full md:w-1/3 lg:w-1/4 flex flex-col gap-6 overflow-y-auto pr-2 custom-scrollbar z-10">
           
-          {/* Filtering Section */}
-          <section className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm transition-all hover:shadow-md">
-            <h2 className="text-base font-bold text-gray-800 mb-4 border-b pb-2 flex items-center gap-2">
-              <Bookmark size={18} className="text-gray-500"/> 노드 시각화 (Dimming)
-            </h2>
-            <div className="space-y-3">
-              <div className="flex flex-col gap-2 p-2 rounded-lg border border-purple-100 bg-purple-50/50">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    checked={showExamTopics} 
-                    onChange={(e) => setShowExamTopics(e.target.checked)}
-                    className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
-                  />
-                  <span className="text-sm font-bold text-purple-800 flex items-center gap-2">
-                    <Bookmark size={16} className="text-purple-600"/> 기출문제 출제 영역만 보기
-                  </span>
-                </label>
-                
-                {showExamTopics && availableYears.length > 0 && (
-                  <div className="ml-7 flex items-center gap-2 animate-in slide-in-from-top-1 fade-in">
-                    <span className="text-xs text-purple-700 font-medium">연도 필터:</span>
-                    <select 
-                      value={selectedExamYear}
-                      onChange={(e) => setSelectedExamYear(e.target.value)}
-                      className="text-xs bg-white border border-purple-200 text-purple-900 rounded px-2 py-1 outline-none focus:border-purple-400 font-medium cursor-pointer"
-                    >
-                      <option value="all">전체 년도</option>
-                      {availableYears.map(year => (
-                        <option key={year} value={year}>{year}년</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              </div>
-              
-              <div className="h-px bg-gray-100 my-2"></div>
-              
-              <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-gray-50 transition-colors">
-                <input 
-                  type="checkbox" 
-                  checked={showPerson} 
-                  onChange={(e) => setShowPerson(e.target.checked)}
-                  className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                />
-                <span className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <User size={16} className="text-[#4D96FF]"/> 인물 노드 강조
-                </span>
-              </label>
-              <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-gray-50 transition-colors">
-                <input 
-                  type="checkbox" 
-                  checked={showPlace} 
-                  onChange={(e) => setShowPlace(e.target.checked)}
-                  className="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500"
-                />
-                <span className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <MapPin size={16} className="text-[#6BCB77]"/> 장소 노드 강조
-                </span>
-              </label>
-            </div>
-          </section>
+
 
           {/* Quiz Section */}
           <section className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm mt-auto transition-all hover:shadow-md flex flex-col relative min-h-[350px]">
@@ -320,6 +259,70 @@ export default function Home() {
 
         {/* Right Panel: Interactive Graph */}
         <section className="w-full md:w-2/3 lg:w-3/4 h-[500px] md:h-full relative rounded-2xl overflow-hidden bg-white border border-gray-200 shadow-inner">
+          
+          {/* Overlay: Filtering Section (Top Left) */}
+          <div className="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl p-4 shadow-md w-60">
+            <h2 className="text-sm font-bold text-gray-800 mb-3 border-b pb-2 flex items-center gap-2">
+              <Bookmark size={16} className="text-gray-500"/> 노드 시각화
+            </h2>
+            <div className="space-y-2">
+              <div className="flex flex-col gap-2 p-2 rounded-lg border border-purple-100 bg-purple-50/50">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={showExamTopics} 
+                    onChange={(e) => setShowExamTopics(e.target.checked)}
+                    className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
+                  />
+                  <span className="text-xs font-bold text-purple-800 flex items-center gap-2">
+                    <Bookmark size={14} className="text-purple-600"/> 기출문제 영역만 보기
+                  </span>
+                </label>
+                
+                {showExamTopics && availableYears.length > 0 && (
+                  <div className="ml-7 flex items-center gap-2 animate-in slide-in-from-top-1 fade-in">
+                    <span className="text-[10px] text-purple-700 font-medium">연도 필터:</span>
+                    <select 
+                      value={selectedExamYear}
+                      onChange={(e) => setSelectedExamYear(e.target.value)}
+                      className="text-[10px] bg-white border border-purple-200 text-purple-900 rounded px-1 py-0.5 outline-none focus:border-purple-400 font-medium cursor-pointer"
+                    >
+                      <option value="all">전체 년도</option>
+                      {availableYears.map(year => (
+                        <option key={year} value={year}>{year}년</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+              
+              <div className="h-px bg-gray-100 my-2"></div>
+              
+              <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                <input 
+                  type="checkbox" 
+                  checked={showPerson} 
+                  onChange={(e) => setShowPerson(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                />
+                <span className="text-xs font-medium text-gray-700 flex items-center gap-2">
+                  <User size={14} className="text-[#4D96FF]"/> 인물 노드 강조
+                </span>
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                <input 
+                  type="checkbox" 
+                  checked={showPlace} 
+                  onChange={(e) => setShowPlace(e.target.checked)}
+                  className="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500"
+                />
+                <span className="text-xs font-medium text-gray-700 flex items-center gap-2">
+                  <MapPin size={14} className="text-[#6BCB77]"/> 장소 노드 강조
+                </span>
+              </label>
+            </div>
+          </div>
+
           <HistoryGraph 
             nodes={displayNodes} 
             links={displayEdges} 
