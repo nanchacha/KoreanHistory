@@ -59,9 +59,10 @@ export default function Home() {
         }
 
         if (edgeRes.data && edgeRes.data.length > 0) {
-          setEdges(edgeRes.data.map(e => ({
-            source: e.source,
-            target: e.target,
+          const validEdges = edgeRes.data.filter(e => e.source_id && e.target_id);
+          setEdges(validEdges.map(e => ({
+            source: e.source_id,
+            target: e.target_id,
             label: e.label || ''
           })));
         }

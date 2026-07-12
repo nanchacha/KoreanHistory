@@ -6,13 +6,13 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-async function checkSchema() {
-  const { error: nodeError } = await supabase.from('nodes').insert([{ label: 'test2', group: 'event' }]);
-  console.log('Nodes insert error:', nodeError);
+async function cleanup() {
+  const { error } = await supabase.from('edges').delete().eq('label', 'test');
+  console.log('Delete error:', error);
   
-  // Cleanup dummy rows
-  await supabase.from('edges').delete().eq('label', 'test');
-  await supabase.from('nodes').delete().eq('label', 'test2');
+  // Dump edges again
+  const { data } = await supabase.from('edges').select('*');
+  console.log('Remaining Edges:', data);
 }
 
-checkSchema();
+cleanup();

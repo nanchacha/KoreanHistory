@@ -93,15 +93,15 @@ export default function AdminPage() {
             // 중복 간선 방지
             const { data: existingEdge } = await supabase.from('edges')
               .select('id')
-              .eq('source', sourceId)
-              .eq('target', targetId)
+              .eq('source_id', sourceId)
+              .eq('target_id', targetId)
               .eq('label', e.label || '')
               .single();
               
             if (!existingEdge) {
               await supabase.from('edges').insert([{
-                source: sourceId,
-                target: targetId,
+                source_id: sourceId,
+                target_id: targetId,
                 label: e.label || ''
               }]);
             }
