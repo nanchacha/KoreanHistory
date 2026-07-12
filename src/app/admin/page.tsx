@@ -1,14 +1,28 @@
 "use client";
 
 import React, { useState } from "react";
-import { UploadCloud, CheckCircle, Database, AlertCircle, Loader2 } from "lucide-react";
+import { UploadCloud, CheckCircle, Database, AlertCircle, Loader2, Lock } from "lucide-react";
 import { supabase } from "../../lib/supabase"; // Correct relative import
 
 export default function AdminPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [password, setPassword] = useState("");
+
   const [file, setFile] = useState<File | null>(null);
   const [isParsing, setIsParsing] = useState(false);
   const [parsedData, setParsedData] = useState<any[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    // 심플한 하드코딩 비밀번호 (실제 운영환경에서는 환경변수로 빼는 것을 권장합니다)
+    if (password === "admin1234" || password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
+      setIsAuthenticated(true);
+    } else {
+      alert("비밀번호가 일치하지 않습니다.");
+      setPassword("");
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -47,8 +61,6 @@ export default function AdminPage() {
     
     try {
       // For MVP: We directly insert the quizzes. 
-      // Note: Node matching logic requires finding existing node UUIDs from 'nodes' table,
-      // which we will simplify for now by inserting just the quizzes.
       const insertData = parsedData.map((quiz: any) => ({
         question: quiz.question,
         options: quiz.options,
@@ -70,6 +82,35 @@ export default function AdminPage() {
       setIsSaving(false);
     }
   };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 font-sans">
+        <form onSubmit={handleLogin} className="bg-white p-8 rounded-3xl shadow-sm border border-gray-200 max-w-sm w-full text-center">
+          <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Lock size={32} />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">관리자 로그인</h2>
+          <p className="text-gray-500 mb-8 text-sm">데이터베이스 접근 권한이 필요합니다.</p>
+          
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="비밀번호 입력 (기본: admin1234)"
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4 transition-all"
+            autoFocus
+          />
+          <button 
+            type="submit" 
+            className="w-full py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-all shadow-sm"
+          >
+            접근 권한 확인
+          </button>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-8 font-sans text-gray-900">
