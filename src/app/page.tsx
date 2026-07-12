@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { rawData, sampleQuiz, GraphNode, GraphLink, QuizData, NodeGroup } from "../data/mockData";
-import { Info, MapPin, User, Bookmark, CheckCircle2, XCircle, X, ChevronRight, ChevronUp, ChevronDown, Share2 } from "lucide-react";
+import { Info, MapPin, User, Bookmark, CheckCircle2, XCircle, X, ChevronRight, ChevronUp, ChevronDown, Share2, ListOrdered } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
 // Dynamically import the ForceGraph component to avoid SSR issues with Canvas
@@ -13,6 +13,7 @@ import MiniMap from "../components/MiniMap";
 export default function Home() {
   const [showPerson, setShowPerson] = useState(true);
   const [showPlace, setShowPlace] = useState(true);
+  const [showEventSequence, setShowEventSequence] = useState(false);
   const [showExamTopics, setShowExamTopics] = useState(false);
   const [selectedExamYear, setSelectedExamYear] = useState<string>("all");
   
@@ -194,6 +195,8 @@ export default function Home() {
             showPlace={showPlace}
             showExamTopics={showExamTopics}
             examNodeIds={examNodeIds}
+            showEventSequence={showEventSequence}
+            onCloseTimeline={() => setShowEventSequence(false)}
           />
 
           {/* Top Left Floating Panel (Tabs + Content) */}
@@ -284,6 +287,17 @@ export default function Home() {
                     />
                     <span className="text-xs md:text-sm font-medium text-gray-700 flex items-center gap-2">
                       <MapPin className="text-[#6BCB77] w-3.5 h-3.5 md:w-4 md:h-4"/> 장소 노드 강조
+                    </span>
+                  </label>
+                  <label className="flex items-center gap-2 md:gap-3 cursor-pointer p-1.5 md:p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                    <input 
+                      type="checkbox" 
+                      checked={showEventSequence} 
+                      onChange={(e) => setShowEventSequence(e.target.checked)}
+                      className="w-3.5 h-3.5 md:w-4 md:h-4 text-amber-500 rounded border-gray-300 focus:ring-amber-500"
+                    />
+                    <span className="text-xs md:text-sm font-medium text-gray-700 flex items-center gap-2">
+                      <ListOrdered className="text-[#F59E0B] w-3.5 h-3.5 md:w-4 md:h-4"/> 사건 순서 표시
                     </span>
                   </label>
                 </div>

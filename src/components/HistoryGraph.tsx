@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useRef, useEffect, useState, useCallback } from "react";
+import React, { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import ForceGraph2D, { ForceGraphMethods } from "react-force-graph-2d";
 import { GraphNode, GraphLink } from "../data/mockData";
+import TimelinePanel from "./TimelinePanel";
 
 interface HistoryGraphProps {
   nodes: GraphNode[];
@@ -14,6 +15,8 @@ interface HistoryGraphProps {
   showPlace: boolean;
   showExamTopics?: boolean;
   examNodeIds?: Set<string>;
+  showEventSequence?: boolean;
+  onCloseTimeline?: () => void;
 }
 
 const colorMap = {
@@ -22,7 +25,7 @@ const colorMap = {
   place: "#6BCB77",
 };
 
-export default function HistoryGraph({ nodes, links, onNodeClick, onLinkClick, highlightNodes, showPerson, showPlace, showExamTopics, examNodeIds }: HistoryGraphProps) {
+export default function HistoryGraph({ nodes, links, onNodeClick, onLinkClick, highlightNodes, showPerson, showPlace, showExamTopics, examNodeIds, showEventSequence, onCloseTimeline }: HistoryGraphProps) {
   const fgRef = useRef<ForceGraphMethods | undefined>(undefined);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const containerRef = useRef<HTMLDivElement>(null);
@@ -44,12 +47,71 @@ export default function HistoryGraph({ nodes, links, onNodeClick, onLinkClick, h
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const isNodeDimmed = useCallback((node: any) => {
-    if (showExamTopics && examNodeIds && !examNodeIds.has(node.id)) return true;
-    if (node.group === "person" && !showPerson) return true;
-    if (node.group === "place" && !showPlace) return true;
+  const isNodeDimmed = useCallback((node: GraphNode) => {
+    if (highlightNodes && highlightNodes.size > 0 && !highlightNodes.has(node.id)) return true;
+    if (!showPerson && node.group === 'person') return true;
+    if (!showPlace && node.group === 'place') return true;
+    if (showExamTopics && examNodeIds && examNodeIds.size > 0 && !examNodeIds.has(node.id)) return true;
     return false;
-  }, [showPerson, showPlace, showExamTopics, examNodeIds]);
+  }, [highlightNodes, showPerson, showPlace, showExamTopics, examNodeIds]);
+
+  const timelineData = useMemo(() => {
+    const map = new Map<string, number>();
+    const groups: GraphNode[][] = [];
+    if (!nodes || nodes.length === 0) return { map, groups };
+    
+    const nodeMap = new Map(nodes.map(n => [n.id, n]));
+    const adjList = new Map<string, string[]>();
+    nodes.forEach(n => adjList.set(n.id, []));
+    
+    links.forEach(link => {
+      const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+      const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+      
+      if (adjList.has(sourceId)) adjList.get(sourceId)!.push(targetId);
+      if (adjList.has(targetId)) adjList.get(targetId)!.push(sourceId);
+    });
+    
+    const visited = new Set<string>();
+    
+    nodes.forEach(startNode => {
+      if (visited.has(startNode.id)) return;
+      
+      const componentEventNodes: typeof nodes = [];
+      const queue = [startNode.id];
+      visited.add(startNode.id);
+      
+      while (queue.length > 0) {
+        const currId = queue.shift()!;
+        const currNode = nodeMap.get(currId);
+        
+        if (currNode && currNode.group === 'event' && currNode.properties?.year) {
+          componentEventNodes.push(currNode);
+        }
+        
+        const neighbors = adjList.get(currId) || [];
+        for (const neighborId of neighbors) {
+          if (!visited.has(neighborId)) {
+            visited.add(neighborId);
+            queue.push(neighborId);
+          }
+        }
+      }
+      
+      if (componentEventNodes.length > 1) { // Only show timeline if there are at least 2 events in a sequence
+        componentEventNodes.sort((a, b) => (a.properties!.year || 0) - (b.properties!.year || 0));
+        componentEventNodes.forEach((node, idx) => {
+          map.set(node.id, idx + 1);
+        });
+        groups.push(componentEventNodes);
+      }
+    });
+    
+    // Sort groups by the earliest year in each group for logical ordering
+    groups.sort((a, b) => (a[0].properties!.year || 0) - (b[0].properties!.year || 0));
+    
+    return { map, groups };
+  }, [nodes, links]);
 
   // Use a callback to paint nodes, including highlights
   const paintNode = useCallback((node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
@@ -104,8 +166,28 @@ export default function HistoryGraph({ nodes, links, onNodeClick, onLinkClick, h
     ctx.fillStyle = "#ffffff"; // White text for all for clean contrast
     ctx.fillText(label, node.x, node.y);
 
+    // Draw sequence badge if enabled
+    if (showEventSequence && node.group === 'event' && timelineData.map.has(node.id)) {
+      const seqNum = timelineData.map.get(node.id);
+      const badgeR = 12 / globalScale;
+      const badgeX = node.x - width / 2;
+      const badgeY = node.y - height / 2;
+      
+      ctx.beginPath();
+      ctx.arc(badgeX, badgeY, badgeR, 0, 2 * Math.PI, false);
+      ctx.fillStyle = "#F59E0B"; // Amber badge
+      ctx.fill();
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 2.5 / globalScale;
+      ctx.stroke();
+      
+      ctx.fillStyle = "#fff";
+      ctx.font = `bold ${12 / globalScale}px Sans-Serif`;
+      ctx.fillText(seqNum!.toString(), badgeX, badgeY);
+    }
+
     ctx.restore();
-  }, [highlightNodes, isNodeDimmed]);
+  }, [highlightNodes, isNodeDimmed, showEventSequence, timelineData]);
 
   const getLinkColor = useCallback((link: any) => {
     // Determine if link should be dimmed by checking its source/target
@@ -190,6 +272,22 @@ export default function HistoryGraph({ nodes, links, onNodeClick, onLinkClick, h
         onLinkClick={(link, event) => onLinkClick(link as GraphLink, event as MouseEvent)}
       />
       
+      {showEventSequence && timelineData.groups.length > 0 && (
+        <TimelinePanel 
+          timelineGroups={timelineData.groups}
+          onNodeClick={(node) => {
+             if (node.x !== undefined && node.y !== undefined) {
+               fgRef.current?.centerAt(node.x, node.y, 800);
+               fgRef.current?.zoom(4, 800);
+             }
+             if (onNodeClick) onNodeClick(node, null as unknown as MouseEvent);
+          }}
+          onClose={() => {
+            if (onCloseTimeline) onCloseTimeline();
+          }}
+        />
+      )}
+
       {/* Search Bar & Dropdown */}
       <div className="absolute bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col w-[65vw] max-w-[270px] md:max-w-[320px]" onClick={(e) => e.stopPropagation()}>
         {/* Dropdown Results (placed above the input so it opens upwards) */}
