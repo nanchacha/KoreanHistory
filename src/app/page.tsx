@@ -13,6 +13,7 @@ export default function Home() {
   const [showPerson, setShowPerson] = useState(true);
   const [showPlace, setShowPlace] = useState(true);
   const [showExamTopics, setShowExamTopics] = useState(false);
+  const [selectedExamYear, setSelectedExamYear] = useState<string>("all");
   
   // Data State
   const [nodes, setNodes] = useState<GraphNode[]>([]);
@@ -30,13 +31,29 @@ export default function Home() {
   const [selectedItem, setSelectedItem] = useState<{ type: 'node' | 'link', data: GraphNode | GraphLink } | null>(null);
   const [modalPos, setModalPos] = useState<{ x: number, y: number } | null>(null);
 
+  const availableYears = React.useMemo(() => {
+    const years = new Set<string>();
+    quizzes.forEach(q => {
+      const match = q.sourcePdf?.match(/(\d{4})/);
+      if (match) {
+        years.add(match[1]);
+      }
+    });
+    return Array.from(years).sort((a, b) => b.localeCompare(a));
+  }, [quizzes]);
+
   const examNodeIds = React.useMemo(() => {
     const ids = new Set<string>();
     quizzes.forEach(q => {
-      q.relatedNodeIds?.forEach(id => ids.add(id));
+      const match = q.sourcePdf?.match(/(\d{4})/);
+      const quizYear = match ? match[1] : 'unknown';
+      
+      if (selectedExamYear === "all" || selectedExamYear === quizYear) {
+        q.relatedNodeIds?.forEach(id => ids.add(id));
+      }
     });
     return ids;
-  }, [quizzes]);
+  }, [quizzes, selectedExamYear]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -55,6 +72,7 @@ export default function Home() {
             answer: q.answer,
             explanation: q.explanation,
             relatedNodeIds: q.related_node_ids || [],
+            sourcePdf: q.source_pdf || '',
           })));
         }
 
@@ -154,17 +172,35 @@ export default function Home() {
               <Bookmark size={18} className="text-gray-500"/> 노드 시각화 (Dimming)
             </h2>
             <div className="space-y-3">
-              <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-gray-50 transition-colors border border-purple-100 bg-purple-50/50">
-                <input 
-                  type="checkbox" 
-                  checked={showExamTopics} 
-                  onChange={(e) => setShowExamTopics(e.target.checked)}
-                  className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
-                />
-                <span className="text-sm font-bold text-purple-800 flex items-center gap-2">
-                  <Bookmark size={16} className="text-purple-600"/> 기출문제 출제 영역만 보기
-                </span>
-              </label>
+              <div className="flex flex-col gap-2 p-2 rounded-lg border border-purple-100 bg-purple-50/50">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={showExamTopics} 
+                    onChange={(e) => setShowExamTopics(e.target.checked)}
+                    className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
+                  />
+                  <span className="text-sm font-bold text-purple-800 flex items-center gap-2">
+                    <Bookmark size={16} className="text-purple-600"/> 기출문제 출제 영역만 보기
+                  </span>
+                </label>
+                
+                {showExamTopics && availableYears.length > 0 && (
+                  <div className="ml-7 flex items-center gap-2 animate-in slide-in-from-top-1 fade-in">
+                    <span className="text-xs text-purple-700 font-medium">연도 필터:</span>
+                    <select 
+                      value={selectedExamYear}
+                      onChange={(e) => setSelectedExamYear(e.target.value)}
+                      className="text-xs bg-white border border-purple-200 text-purple-900 rounded px-2 py-1 outline-none focus:border-purple-400 font-medium cursor-pointer"
+                    >
+                      <option value="all">전체 년도</option>
+                      {availableYears.map(year => (
+                        <option key={year} value={year}>{year}년</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
               
               <div className="h-px bg-gray-100 my-2"></div>
               

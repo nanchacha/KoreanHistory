@@ -25,6 +25,7 @@ export interface QuizData {
   answer: number;
   explanation: string;
   relatedNodeIds: string[];
+  sourcePdf?: string;
 }
 
 export const rawData = {
