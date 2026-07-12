@@ -117,8 +117,43 @@ export default function HistoryGraph({ nodes, links, onNodeClick, onLinkClick, h
 
   const graphData = React.useMemo(() => ({ nodes, links }), [nodes, links]);
 
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim() || !fgRef.current) return;
+    
+    const query = searchQuery.toLowerCase();
+    
+    // 1. Search for edge first
+    const foundEdge = links.find(l => l.label && l.label.toLowerCase().includes(query));
+    if (foundEdge) {
+      // react-force-graph replaces source/target string IDs with actual node objects during simulation
+      const source: any = typeof foundEdge.source === 'object' ? foundEdge.source : nodes.find(n => n.id === foundEdge.source);
+      const target: any = typeof foundEdge.target === 'object' ? foundEdge.target : nodes.find(n => n.id === foundEdge.target);
+      
+      if (source && target && source.x !== undefined && target.x !== undefined) {
+        const midX = (source.x + target.x) / 2;
+        const midY = (source.y + target.y) / 2;
+        fgRef.current.centerAt(midX, midY, 1000);
+        fgRef.current.zoom(6, 1000);
+        return;
+      }
+    }
+    
+    // 2. Fallback: Search for node
+    const foundNode: any = nodes.find(n => n.label.toLowerCase().includes(query));
+    if (foundNode && foundNode.x !== undefined) {
+      fgRef.current.centerAt(foundNode.x, foundNode.y, 1000);
+      fgRef.current.zoom(6, 1000);
+      return;
+    }
+    
+    alert("검색 결과가 없습니다.");
+  };
+
   return (
-    <div ref={containerRef} className="w-full h-full">
+    <div ref={containerRef} className="w-full h-full relative">
       <ForceGraph2D
         ref={fgRef}
         width={dimensions.width}
@@ -134,6 +169,26 @@ export default function HistoryGraph({ nodes, links, onNodeClick, onLinkClick, h
         onNodeClick={(node, event) => onNodeClick(node as GraphNode, event as MouseEvent)}
         onLinkClick={(link, event) => onLinkClick(link as GraphLink, event as MouseEvent)}
       />
+      
+      {/* Search Bar */}
+      <form 
+        onSubmit={handleSearch}
+        className="absolute top-4 right-4 z-10 flex items-center bg-white/90 backdrop-blur-md rounded-xl shadow-md border border-gray-200 overflow-hidden"
+      >
+        <input 
+          type="text" 
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="노드 또는 엣지 검색..."
+          className="w-48 px-4 py-2 text-sm text-gray-700 bg-transparent outline-none placeholder-gray-400"
+        />
+        <button 
+          type="submit" 
+          className="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 transition-colors border-l border-gray-200 font-medium text-sm"
+        >
+          검색
+        </button>
+      </form>
     </div>
   );
 }
