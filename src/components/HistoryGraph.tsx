@@ -118,6 +118,9 @@ export default function HistoryGraph({ nodes, links, onNodeClick, onLinkClick, h
   const graphData = React.useMemo(() => ({ nodes, links }), [nodes, links]);
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [lastQuery, setLastQuery] = useState("");
+  const [searchIndex, setSearchIndex] = useState(0);
+  const [totalResults, setTotalResults] = useState(0);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,10 +128,32 @@ export default function HistoryGraph({ nodes, links, onNodeClick, onLinkClick, h
     
     const query = searchQuery.toLowerCase();
     
-    // 1. Search for edge first
-    const foundEdge = links.find(l => l.label && l.label.toLowerCase().includes(query));
-    if (foundEdge) {
-      // react-force-graph replaces source/target string IDs with actual node objects during simulation
+    const matchingEdges = links.filter(l => l.label && l.label.toLowerCase().includes(query));
+    const matchingNodes = nodes.filter(n => n.label.toLowerCase().includes(query));
+    const total = matchingEdges.length + matchingNodes.length;
+    
+    setTotalResults(total);
+    
+    if (total === 0) {
+      alert("검색 결과가 없습니다.");
+      setSearchIndex(0);
+      setLastQuery(query);
+      return;
+    }
+    
+    let currentIndex = searchIndex;
+    if (query !== lastQuery) {
+      currentIndex = 0;
+      setLastQuery(query);
+    } else {
+      currentIndex = (currentIndex + 1) % total;
+    }
+    
+    setSearchIndex(currentIndex);
+    
+    if (currentIndex < matchingEdges.length) {
+      // It's an edge
+      const foundEdge = matchingEdges[currentIndex];
       const source: any = typeof foundEdge.source === 'object' ? foundEdge.source : nodes.find(n => n.id === foundEdge.source);
       const target: any = typeof foundEdge.target === 'object' ? foundEdge.target : nodes.find(n => n.id === foundEdge.target);
       
@@ -137,19 +162,16 @@ export default function HistoryGraph({ nodes, links, onNodeClick, onLinkClick, h
         const midY = (source.y + target.y) / 2;
         fgRef.current.centerAt(midX, midY, 1000);
         fgRef.current.zoom(6, 1000);
-        return;
+      }
+    } else {
+      // It's a node
+      const nodeIndex = currentIndex - matchingEdges.length;
+      const foundNode: any = matchingNodes[nodeIndex];
+      if (foundNode && foundNode.x !== undefined) {
+        fgRef.current.centerAt(foundNode.x, foundNode.y, 1000);
+        fgRef.current.zoom(6, 1000);
       }
     }
-    
-    // 2. Fallback: Search for node
-    const foundNode: any = nodes.find(n => n.label.toLowerCase().includes(query));
-    if (foundNode && foundNode.x !== undefined) {
-      fgRef.current.centerAt(foundNode.x, foundNode.y, 1000);
-      fgRef.current.zoom(6, 1000);
-      return;
-    }
-    
-    alert("검색 결과가 없습니다.");
   };
 
   return (
@@ -175,13 +197,25 @@ export default function HistoryGraph({ nodes, links, onNodeClick, onLinkClick, h
         onSubmit={handleSearch}
         className="absolute top-4 right-4 z-10 flex items-center bg-white/90 backdrop-blur-md rounded-xl shadow-md border border-gray-200 overflow-hidden"
       >
-        <input 
-          type="text" 
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="노드 또는 엣지 검색..."
-          className="w-48 px-4 py-2 text-sm text-gray-700 bg-transparent outline-none placeholder-gray-400"
-        />
+        <div className="relative flex items-center">
+          <input 
+            type="text" 
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              if (e.target.value.toLowerCase() !== lastQuery) {
+                setTotalResults(0);
+              }
+            }}
+            placeholder="노드 또는 엣지 검색..."
+            className="w-48 px-4 py-2 text-sm text-gray-700 bg-transparent outline-none placeholder-gray-400 pr-12"
+          />
+          {totalResults > 0 && searchQuery.toLowerCase() === lastQuery && (
+            <span className="absolute right-3 text-xs font-medium text-gray-400 pointer-events-none">
+              {searchIndex + 1}/{totalResults}
+            </span>
+          )}
+        </div>
         <button 
           type="submit" 
           className="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 transition-colors border-l border-gray-200 font-medium text-sm"
