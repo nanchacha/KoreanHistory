@@ -241,5 +241,6 @@ export default function HistoryGraph({ nodes, links, onNodeClick, onLinkClick, h
           </div>
         )}
       </div>
+    </div>
   );
 }
