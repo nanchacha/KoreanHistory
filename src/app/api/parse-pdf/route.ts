@@ -65,9 +65,24 @@ export async function POST(req: NextRequest) {
     "options": ["보기 1 내용", "보기 2 내용", "보기 3 내용", "보기 4 내용", "보기 5 내용"],
     "answer": 0, // 정답 인덱스 (0부터 시작, 모르면 0)
     "explanation": "이 문제에 대한 간단한 역사적 해설",
-    "nodes": ["관련된 역사적 사건 이름", "관련 인물", "장소"] // 배열 형태
+    "nodes": [
+      {
+        "label": "명성황후",
+        "group": "person", // 반드시 "event", "person", "place" 중 하나
+        "properties": { "description": "조선의 왕비", "year": 1895 }
+      }
+    ],
+    "edges": [
+      {
+        "source_label": "명성황후",
+        "target_label": "을미사변",
+        "label": "피해자" // 관계 설명
+      }
+    ]
   }
 ]
+
+* 주의사항: edges의 source_label과 target_label은 반드시 추출한 nodes의 label과 정확히 일치해야 합니다.
 
 [PDF 텍스트]
 ${limitedText}
@@ -91,14 +106,30 @@ ${limitedText}
           "options": ["강동 6주 획득", "별무반 창설", "대마도 정벌", "귀주 대첩", "삼별초의 항쟁"],
           "answer": 2,
           "explanation": "대마도 정벌은 조선 세종 때 이종무가 수행한 사건입니다. (API 연동 실패로 임시 데이터를 보여주고 있습니다)",
-          "nodes": ["대마도 정벌", "이종무", "조선 세종"]
+          "nodes": [
+            { "label": "대마도 정벌", "group": "event", "properties": { "year": 1419, "summary": "왜구를 토벌하기 위해 대마도를 정벌한 사건" } },
+            { "label": "이종무", "group": "person", "properties": { "description": "대마도 정벌을 지휘한 장수" } },
+            { "label": "조선 세종", "group": "person", "properties": { "description": "조선의 제4대 왕" } }
+          ],
+          "edges": [
+            { "source_label": "이종무", "target_label": "대마도 정벌", "label": "지휘" },
+            { "source_label": "조선 세종", "target_label": "대마도 정벌", "label": "명령" }
+          ]
         },
         {
           "question": "[가상 데이터] 임진왜란 당시 한산도 대첩을 이끈 인물은?",
           "options": ["권율", "이순신", "원균", "곽재우", "김시민"],
           "answer": 1,
           "explanation": "한산도 대첩은 이순신 장군이 학익진 전술을 사용하여 왜군을 크게 무찌른 전투입니다. (임시 데이터)",
-          "nodes": ["한산도 대첩", "이순신", "임진왜란"]
+          "nodes": [
+            { "label": "한산도 대첩", "group": "event", "properties": { "year": 1592, "summary": "이순신 장군이 학익진으로 승리한 해전" } },
+            { "label": "이순신", "group": "person", "properties": { "description": "조선 중기의 명장" } },
+            { "label": "임진왜란", "group": "event", "properties": { "year": 1592, "summary": "일본이 조선을 침략한 전쟁" } }
+          ],
+          "edges": [
+            { "source_label": "이순신", "target_label": "한산도 대첩", "label": "지휘" },
+            { "source_label": "한산도 대첩", "target_label": "임진왜란", "label": "포함됨" }
+          ]
         }
       ];
       return NextResponse.json({ success: true, data: mockData, isMock: true });

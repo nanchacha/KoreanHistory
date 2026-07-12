@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { UploadCloud, CheckCircle, Database, AlertCircle, Loader2, Lock } from "lucide-react";
-import { supabase } from "../../lib/supabase"; // Correct relative import
+import { supabase } from "../../lib/supabase";
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -15,7 +15,6 @@ export default function AdminPage() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // 심플한 하드코딩 비밀번호 (실제 운영환경에서는 환경변수로 빼는 것을 권장합니다)
     if (password === "admin1234" || password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
       setIsAuthenticated(true);
     } else {
@@ -60,24 +59,75 @@ export default function AdminPage() {
     setIsSaving(true);
     
     try {
-      // For MVP: We directly insert the quizzes. 
-      const insertData = parsedData.map((quiz: any) => ({
-        question: quiz.question,
-        options: quiz.options,
-        answer: quiz.answer,
-        explanation: quiz.explanation,
-        source_pdf: file?.name || 'unknown'
-      }));
+      for (const quiz of parsedData) {
+        const nodeLabelToId: Record<string, string> = {};
 
-      const { error } = await supabase.from('quizzes').insert(insertData);
+        // 1. 노드(Nodes) 저장 및 매핑
+        for (const n of (quiz.nodes || [])) {
+          if (!n.label) continue;
+          
+          const { data: existing } = await supabase.from('nodes').select('id').eq('label', n.label).single();
+          let nodeId;
+          
+          if (existing) {
+            nodeId = existing.id;
+          } else {
+            const { data: inserted, error: insertErr } = await supabase.from('nodes').insert([{
+              label: n.label,
+              group: n.group || 'event',
+              properties: n.properties || {}
+            }]).select('id').single();
+            
+            if (insertErr) throw insertErr;
+            nodeId = inserted.id;
+          }
+          nodeLabelToId[n.label] = nodeId;
+        }
+
+        // 2. 간선(Edges) 저장
+        for (const e of (quiz.edges || [])) {
+          const sourceId = nodeLabelToId[e.source_label];
+          const targetId = nodeLabelToId[e.target_label];
+          
+          if (sourceId && targetId) {
+            // 중복 간선 방지
+            const { data: existingEdge } = await supabase.from('edges')
+              .select('id')
+              .eq('source', sourceId)
+              .eq('target', targetId)
+              .eq('label', e.label || '')
+              .single();
+              
+            if (!existingEdge) {
+              await supabase.from('edges').insert([{
+                source: sourceId,
+                target: targetId,
+                label: e.label || ''
+              }]);
+            }
+          }
+        }
+
+        // 3. 퀴즈 저장 및 관련 노드 연결
+        const relatedNodeIds = Object.values(nodeLabelToId);
+        const { error: quizErr } = await supabase.from('quizzes').insert([{
+          question: quiz.question,
+          options: quiz.options,
+          answer: quiz.answer,
+          explanation: quiz.explanation,
+          source_pdf: file?.name || 'unknown',
+          related_node_ids: relatedNodeIds
+        }]);
+        
+        if (quizErr) throw quizErr;
+      }
       
-      if (error) throw error;
-      
-      alert("🎉 성공적으로 Supabase 데이터베이스에 저장되었습니다!");
+      alert("🎉 모든 노드, 관계, 퀴즈 데이터가 성공적으로 저장되었습니다!");
       setParsedData([]);
       setFile(null);
     } catch (err: any) {
-      alert("DB 저장 실패: " + err.message);
+      console.error(err);
+      alert("DB 저장 중 오류 발생: " + (err.message || err.toString()));
     } finally {
       setIsSaving(false);
     }
@@ -183,9 +233,9 @@ export default function AdminPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-wrap gap-1">
-                        {(item.nodes || []).map((n: string, i: number) => (
+                        {(item.nodes || []).map((n: any, i: number) => (
                           <span key={i} className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-md border border-blue-100">
-                            {n}
+                            {n.label || n}
                           </span>
                         ))}
                       </div>

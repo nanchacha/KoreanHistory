@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { rawData, sampleQuiz, GraphNode, GraphLink, QuizData } from "../data/mockData";
-import { Info, MapPin, User, Bookmark, CheckCircle2, XCircle, X, ChevronRight } from "lucide-react";
+import { rawData, sampleQuiz, GraphNode, GraphLink, QuizData, NodeGroup } from "../data/mockData";
+import { Info, MapPin, User, Bookmark, CheckCircle2, XCircle, X, ChevronRight, Share2 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
 // Dynamically import the ForceGraph component to avoid SSR issues with Canvas
@@ -13,8 +13,12 @@ export default function Home() {
   const [showPerson, setShowPerson] = useState(true);
   const [showPlace, setShowPlace] = useState(true);
   
-  // Quiz State
-  const [quizzes, setQuizzes] = useState<QuizData[]>([sampleQuiz]);
+  // Data State
+  const [nodes, setNodes] = useState<GraphNode[]>([]);
+  const [edges, setEdges] = useState<GraphLink[]>([]);
+  const [quizzes, setQuizzes] = useState<QuizData[]>([]);
+
+  // Quiz UI State
   const [currentQuizIdx, setCurrentQuizIdx] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [isAnswerChecked, setIsAnswerChecked] = useState(false);
@@ -26,28 +30,53 @@ export default function Home() {
   const [modalPos, setModalPos] = useState<{ x: number, y: number } | null>(null);
 
   useEffect(() => {
-    const fetchQuizzes = async () => {
+    const fetchData = async () => {
       try {
-        const { data, error } = await supabase.from('quizzes').select('*');
-        if (data && data.length > 0) {
-          const mappedQuizzes = data.map(q => ({
+        const [quizRes, nodeRes, edgeRes] = await Promise.all([
+          supabase.from('quizzes').select('*'),
+          supabase.from('nodes').select('*'),
+          supabase.from('edges').select('*')
+        ]);
+
+        if (quizRes.data && quizRes.data.length > 0) {
+          setQuizzes(quizRes.data.map(q => ({
             id: q.id,
             question: q.question,
             options: q.options,
             answer: q.answer,
             explanation: q.explanation,
             relatedNodeIds: q.related_node_ids || [],
-          }));
-          setQuizzes(mappedQuizzes);
+          })));
+        }
+
+        if (nodeRes.data && nodeRes.data.length > 0) {
+          setNodes(nodeRes.data.map(n => ({
+            id: n.id,
+            label: n.label,
+            group: n.group as NodeGroup,
+            properties: n.properties || {}
+          })));
+        }
+
+        if (edgeRes.data && edgeRes.data.length > 0) {
+          setEdges(edgeRes.data.map(e => ({
+            source: e.source,
+            target: e.target,
+            label: e.label || ''
+          })));
         }
       } catch (err) {
-        console.error("Failed to fetch quizzes:", err);
+        console.error("Failed to fetch data:", err);
       }
     };
-    fetchQuizzes();
+    fetchData();
   }, []);
 
-  const currentQuiz = quizzes[currentQuizIdx] || sampleQuiz;
+  const displayQuizzes = quizzes.length > 0 ? quizzes : [sampleQuiz];
+  const displayNodes = nodes.length > 0 ? nodes : rawData.nodes;
+  const displayEdges = edges.length > 0 ? edges : rawData.edges;
+
+  const currentQuiz = displayQuizzes[currentQuizIdx] || sampleQuiz;
 
   const handleNodeClick = (node: GraphNode, event: MouseEvent) => {
     setSelectedItem({ type: 'node', data: node });
@@ -76,14 +105,14 @@ export default function Home() {
   };
 
   const handleNextQuiz = () => {
-    setCurrentQuizIdx((prev) => (prev + 1) % quizzes.length);
+    setCurrentQuizIdx((prev) => (prev + 1) % displayQuizzes.length);
     setSelectedAnswer(null);
     setIsAnswerChecked(false);
     setHighlightNodes(new Set());
   };
 
-  const getSourceLabel = (link: any) => typeof link.source === 'object' ? link.source.label : link.source;
-  const getTargetLabel = (link: any) => typeof link.target === 'object' ? link.target.label : link.target;
+  const getSourceLabel = (link: any) => typeof link.source === 'object' ? link.source.label : (displayNodes.find(n => n.id === link.source)?.label || link.source);
+  const getTargetLabel = (link: any) => typeof link.target === 'object' ? link.target.label : (displayNodes.find(n => n.id === link.target)?.label || link.target);
 
   return (
     <div className="flex flex-col h-screen bg-gray-50 text-gray-900 font-sans overflow-hidden relative">
@@ -91,13 +120,13 @@ export default function Home() {
       <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 px-6 py-4 flex-shrink-0 shadow-sm z-10 flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <span className="text-blue-600">🔗</span> 유기적으로 연결되는 한국사
+            <Share2 className="text-blue-600" size={24} /> 유기적으로 연결되는 한국사
           </h1>
           <p className="text-sm text-gray-500 mt-1">
             사건, 인물, 장소의 관계를 시각적으로 이해하는 인터랙티브 학습 플랫폼
           </p>
         </div>
-        <a href="/admin" target="_blank" className="text-sm font-medium text-blue-600 hover:text-blue-800 bg-blue-50 px-4 py-2 rounded-lg transition-colors">
+        <a href="/admin" target="_blank" className="text-sm font-medium text-blue-600 hover:text-blue-800 bg-blue-50 px-4 py-2 rounded-lg transition-colors border border-blue-100">
           관리자 (Admin) 페이지 열기
         </a>
       </header>
@@ -142,9 +171,9 @@ export default function Home() {
           {/* Quiz Section */}
           <section className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm mt-auto transition-all hover:shadow-md flex flex-col relative min-h-[350px]">
             <h2 className="text-base font-bold text-gray-800 mb-4 border-b pb-2 flex justify-between items-center">
-              📝 기출문제
-              <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded font-bold shadow-sm">
-                DB 연동됨
+              📝 AI 추출 기출문제
+              <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded font-bold shadow-sm border border-green-200">
+                DB 실시간 연동
               </span>
             </h2>
             <div className="mb-5 flex-1">
@@ -192,10 +221,10 @@ export default function Home() {
                 정답 확인하기
               </button>
 
-              {quizzes.length > 1 && (
+              {displayQuizzes.length > 1 && (
                 <button 
                   onClick={handleNextQuiz}
-                  className="bg-blue-50 text-blue-600 hover:bg-blue-100 py-2.5 px-4 rounded-xl transition-colors font-medium flex items-center justify-center"
+                  className="bg-blue-50 text-blue-600 hover:bg-blue-100 py-2.5 px-4 rounded-xl transition-colors font-medium flex items-center justify-center border border-blue-100"
                   title="다음 문제"
                 >
                   <ChevronRight size={20} />
@@ -231,8 +260,8 @@ export default function Home() {
         {/* Right Panel: Interactive Graph */}
         <section className="w-full md:w-2/3 lg:w-3/4 h-[500px] md:h-full relative rounded-2xl overflow-hidden bg-white border border-gray-200 shadow-inner">
           <HistoryGraph 
-            nodes={rawData.nodes} 
-            links={rawData.edges} 
+            nodes={displayNodes} 
+            links={displayEdges} 
             onNodeClick={handleNodeClick}
             onLinkClick={handleLinkClick}
             highlightNodes={highlightNodes}
@@ -252,7 +281,6 @@ export default function Home() {
               <span className="inline-block w-3.5 h-3.5 rounded-full bg-[#6BCB77]"></span> 장소
             </span>
           </div>
-
         </section>
       </main>
 
@@ -274,9 +302,10 @@ export default function Home() {
           
           {selectedItem.type === 'node' && (
             <div className="pt-2 pr-4">
+              <h3 className="text-xl font-bold text-gray-900 mb-2">{(selectedItem.data as GraphNode).label}</h3>
               <p className="text-sm text-gray-700 leading-relaxed">
                 {(selectedItem.data as GraphNode).properties.year && (
-                  <strong className="text-gray-900 mr-1.5">
+                  <strong className="text-blue-600 mr-1.5">
                     [{(selectedItem.data as GraphNode).properties.year}년]
                   </strong>
                 )}
@@ -294,8 +323,8 @@ export default function Home() {
           {selectedItem.type === 'link' && (
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <span className="px-2 py-0.5 text-[10px] font-bold rounded-full text-white bg-gray-500">
-                  RELATIONSHIP (EDGE)
+                <span className="px-2 py-0.5 text-[10px] font-bold rounded-full text-white bg-blue-600">
+                  역사적 인과관계
                 </span>
               </div>
               <h3 className="text-lg font-bold text-gray-900 mb-4 pb-3 border-b border-gray-100">
@@ -310,9 +339,6 @@ export default function Home() {
                   {getTargetLabel(selectedItem.data as GraphLink)}
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mt-4 text-center">
-                JSON에 정의된 Edge(연결선) 데이터입니다.
-              </p>
             </div>
           )}
         </div>
