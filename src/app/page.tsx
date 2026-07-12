@@ -12,6 +12,7 @@ const HistoryGraph = dynamic(() => import("../components/HistoryGraph"), { ssr: 
 export default function Home() {
   const [showPerson, setShowPerson] = useState(true);
   const [showPlace, setShowPlace] = useState(true);
+  const [showExamTopics, setShowExamTopics] = useState(false);
   
   // Data State
   const [nodes, setNodes] = useState<GraphNode[]>([]);
@@ -28,6 +29,14 @@ export default function Home() {
   // Modal State
   const [selectedItem, setSelectedItem] = useState<{ type: 'node' | 'link', data: GraphNode | GraphLink } | null>(null);
   const [modalPos, setModalPos] = useState<{ x: number, y: number } | null>(null);
+
+  const examNodeIds = React.useMemo(() => {
+    const ids = new Set<string>();
+    quizzes.forEach(q => {
+      q.relatedNodeIds?.forEach(id => ids.add(id));
+    });
+    return ids;
+  }, [quizzes]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -145,6 +154,20 @@ export default function Home() {
               <Bookmark size={18} className="text-gray-500"/> 노드 시각화 (Dimming)
             </h2>
             <div className="space-y-3">
+              <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-gray-50 transition-colors border border-purple-100 bg-purple-50/50">
+                <input 
+                  type="checkbox" 
+                  checked={showExamTopics} 
+                  onChange={(e) => setShowExamTopics(e.target.checked)}
+                  className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
+                />
+                <span className="text-sm font-bold text-purple-800 flex items-center gap-2">
+                  <Bookmark size={16} className="text-purple-600"/> 기출문제 출제 영역만 보기
+                </span>
+              </label>
+              
+              <div className="h-px bg-gray-100 my-2"></div>
+              
               <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-gray-50 transition-colors">
                 <input 
                   type="checkbox" 
@@ -269,6 +292,8 @@ export default function Home() {
             highlightNodes={highlightNodes}
             showPerson={showPerson}
             showPlace={showPlace}
+            showExamTopics={showExamTopics}
+            examNodeIds={examNodeIds}
           />
           
           {/* Legend */}

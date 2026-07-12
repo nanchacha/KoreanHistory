@@ -12,6 +12,8 @@ interface HistoryGraphProps {
   highlightNodes?: Set<string>;
   showPerson: boolean;
   showPlace: boolean;
+  showExamTopics?: boolean;
+  examNodeIds?: Set<string>;
 }
 
 const colorMap = {
@@ -20,7 +22,7 @@ const colorMap = {
   place: "#6BCB77",
 };
 
-export default function HistoryGraph({ nodes, links, onNodeClick, onLinkClick, highlightNodes, showPerson, showPlace }: HistoryGraphProps) {
+export default function HistoryGraph({ nodes, links, onNodeClick, onLinkClick, highlightNodes, showPerson, showPlace, showExamTopics, examNodeIds }: HistoryGraphProps) {
   const fgRef = useRef<ForceGraphMethods | undefined>(undefined);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const containerRef = useRef<HTMLDivElement>(null);
@@ -43,10 +45,11 @@ export default function HistoryGraph({ nodes, links, onNodeClick, onLinkClick, h
   }, []);
 
   const isNodeDimmed = useCallback((node: any) => {
+    if (showExamTopics && examNodeIds && !examNodeIds.has(node.id)) return true;
     if (node.group === "person" && !showPerson) return true;
     if (node.group === "place" && !showPlace) return true;
     return false;
-  }, [showPerson, showPlace]);
+  }, [showPerson, showPlace, showExamTopics, examNodeIds]);
 
   // Use a callback to paint nodes, including highlights
   const paintNode = useCallback((node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
