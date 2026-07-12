@@ -187,18 +187,18 @@ export default function HistoryGraph({ nodes, links, onNodeClick, onLinkClick, h
       />
       
       {/* Search Bar & Dropdown */}
-      <div className="absolute top-4 right-4 z-10 flex flex-col w-64" onClick={(e) => e.stopPropagation()}>
+      <div className="absolute top-4 right-4 z-10 flex flex-col w-72" onClick={(e) => e.stopPropagation()}>
         <form 
           onSubmit={handleSearch}
-          className="flex items-center bg-white/90 backdrop-blur-md rounded-xl shadow-md border border-gray-200 overflow-hidden"
+          className="flex items-center bg-white/90 backdrop-blur-md rounded-xl shadow-md border border-gray-200 overflow-hidden w-full"
         >
           <input 
             type="text" 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => { if (searchResults.length > 0) setIsDropdownOpen(true); }}
-            placeholder="노드 또는 엣지 검색..."
-            className="flex-1 px-4 py-2 text-sm text-gray-700 bg-transparent outline-none placeholder-gray-400"
+            placeholder="노드 검색..."
+            className="flex-1 min-w-0 px-4 py-2 text-sm text-gray-700 bg-transparent outline-none placeholder-gray-400"
           />
           <button 
             type="submit" 
