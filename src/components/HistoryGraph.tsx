@@ -202,7 +202,7 @@ export default function HistoryGraph({ nodes, links, onNodeClick, onLinkClick, h
           />
           <button 
             type="submit" 
-            className="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 transition-colors border-l border-gray-200 font-medium text-sm"
+            className="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 transition-colors border-l border-gray-200 font-medium text-sm whitespace-nowrap flex-shrink-0"
           >
             검색
           </button>
