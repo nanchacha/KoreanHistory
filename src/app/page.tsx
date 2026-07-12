@@ -21,6 +21,7 @@ export default function Home() {
   const [quizzes, setQuizzes] = useState<QuizData[]>([]);
 
   // Quiz UI State
+  const [activeTab, setActiveTab] = useState<'graph' | 'quiz'>('graph');
   const [currentQuizIdx, setCurrentQuizIdx] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [isAnswerChecked, setIsAnswerChecked] = useState(false);
@@ -161,168 +162,10 @@ export default function Home() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col md:flex-row overflow-hidden p-4 md:p-6 gap-6 relative">
+      <main className="flex-1 overflow-hidden relative">
         
-        {/* Left Panel */}
-        <aside className="w-full md:w-1/3 lg:w-1/4 flex flex-col gap-6 overflow-y-auto pr-2 custom-scrollbar z-10">
-          
-
-
-          {/* Quiz Section */}
-          <section className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm mt-auto transition-all hover:shadow-md flex flex-col relative min-h-[350px]">
-            <h2 className="text-base font-bold text-gray-800 mb-4 border-b pb-2 flex justify-between items-center">
-              📝 AI 추출 기출문제
-              <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded font-bold shadow-sm border border-green-200">
-                DB 실시간 연동
-              </span>
-            </h2>
-            <div className="mb-5 flex-1">
-              <div className="flex justify-between items-center mb-3">
-                <p className="text-sm font-bold text-gray-800 leading-relaxed">
-                  Q. {currentQuiz.question}
-                </p>
-              </div>
-              <div className="space-y-2 text-sm text-gray-700">
-                {currentQuiz.options.map((option, idx) => (
-                  <label 
-                    key={idx}
-                    className={`flex items-start gap-3 cursor-pointer p-3 rounded-lg border transition-all
-                      ${selectedAnswer === idx 
-                        ? 'border-blue-500 bg-blue-50 shadow-sm' 
-                        : 'border-transparent hover:bg-gray-50 hover:border-gray-200'}`}
-                  >
-                    <input 
-                      type="radio" 
-                      name="quiz" 
-                      value={idx}
-                      checked={selectedAnswer === idx}
-                      onChange={() => {
-                        setSelectedAnswer(idx);
-                        setIsAnswerChecked(false);
-                      }}
-                      className="mt-0.5 w-4 h-4 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="flex-1">{idx + 1}. {option}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-            
-            <div className="flex gap-2 mt-auto">
-              <button 
-                onClick={handleCheckAnswer}
-                disabled={selectedAnswer === null}
-                className={`flex-1 font-medium py-2.5 px-4 rounded-xl transition-all shadow-sm ${
-                  selectedAnswer === null 
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-gray-900 hover:bg-gray-800 text-white hover:shadow-md active:scale-[0.98]'
-                }`}
-              >
-                정답 확인하기
-              </button>
-
-              {displayQuizzes.length > 1 && (
-                <button 
-                  onClick={handleNextQuiz}
-                  className="bg-blue-50 text-blue-600 hover:bg-blue-100 py-2.5 px-4 rounded-xl transition-colors font-medium flex items-center justify-center border border-blue-100"
-                  title="다음 문제"
-                >
-                  <ChevronRight size={20} />
-                </button>
-              )}
-            </div>
-
-            {/* Quiz Feedback */}
-            {isAnswerChecked && (
-              <div className={`mt-4 text-sm p-4 rounded-xl shadow-inner border flex items-start gap-3 animate-in fade-in slide-in-from-top-2 ${
-                selectedAnswer === currentQuiz.answer 
-                  ? 'bg-green-50 border-green-200 text-green-800'
-                  : 'bg-red-50 border-red-200 text-red-800'
-              }`}>
-                {selectedAnswer === currentQuiz.answer ? (
-                  <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                ) : (
-                  <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                )}
-                <div>
-                  <p className="font-bold mb-1">
-                    {selectedAnswer === currentQuiz.answer ? "정답입니다!" : "오답입니다."}
-                  </p>
-                  <p className="text-xs leading-relaxed opacity-90 mt-1.5">
-                    {currentQuiz.explanation}
-                  </p>
-                </div>
-              </div>
-            )}
-          </section>
-        </aside>
-
-        {/* Right Panel: Interactive Graph */}
-        <section className="w-full md:w-2/3 lg:w-3/4 h-[500px] md:h-full relative rounded-2xl overflow-hidden bg-white border border-gray-200 shadow-inner">
-          
-          {/* Overlay: Filtering Section (Top Left) */}
-          <div className="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl p-4 shadow-md w-60">
-            <h2 className="text-sm font-bold text-gray-800 mb-3 border-b pb-2 flex items-center gap-2">
-              <Bookmark size={16} className="text-gray-500"/> 노드 시각화
-            </h2>
-            <div className="space-y-2">
-              <div className="flex flex-col gap-2 p-2 rounded-lg border border-purple-100 bg-purple-50/50">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    checked={showExamTopics} 
-                    onChange={(e) => setShowExamTopics(e.target.checked)}
-                    className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
-                  />
-                  <span className="text-xs font-bold text-purple-800 flex items-center gap-2">
-                    <Bookmark size={14} className="text-purple-600"/> 기출문제 영역만 보기
-                  </span>
-                </label>
-                
-                {showExamTopics && availableYears.length > 0 && (
-                  <div className="ml-7 flex items-center gap-2 animate-in slide-in-from-top-1 fade-in">
-                    <span className="text-[10px] text-purple-700 font-medium">연도 필터:</span>
-                    <select 
-                      value={selectedExamYear}
-                      onChange={(e) => setSelectedExamYear(e.target.value)}
-                      className="text-[10px] bg-white border border-purple-200 text-purple-900 rounded px-1 py-0.5 outline-none focus:border-purple-400 font-medium cursor-pointer"
-                    >
-                      <option value="all">전체 년도</option>
-                      {availableYears.map(year => (
-                        <option key={year} value={year}>{year}년</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              </div>
-              
-              <div className="h-px bg-gray-100 my-2"></div>
-              
-              <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-gray-50 transition-colors">
-                <input 
-                  type="checkbox" 
-                  checked={showPerson} 
-                  onChange={(e) => setShowPerson(e.target.checked)}
-                  className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                />
-                <span className="text-xs font-medium text-gray-700 flex items-center gap-2">
-                  <User size={14} className="text-[#4D96FF]"/> 인물 노드 강조
-                </span>
-              </label>
-              <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-gray-50 transition-colors">
-                <input 
-                  type="checkbox" 
-                  checked={showPlace} 
-                  onChange={(e) => setShowPlace(e.target.checked)}
-                  className="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500"
-                />
-                <span className="text-xs font-medium text-gray-700 flex items-center gap-2">
-                  <MapPin size={14} className="text-[#6BCB77]"/> 장소 노드 강조
-                </span>
-              </label>
-            </div>
-          </div>
-
+        {/* Full Screen Interactive Graph */}
+        <section className="w-full h-full relative bg-white">
           <HistoryGraph 
             nodes={displayNodes} 
             links={displayEdges} 
@@ -334,6 +177,188 @@ export default function Home() {
             showExamTopics={showExamTopics}
             examNodeIds={examNodeIds}
           />
+
+          {/* Top Left Floating Panel (Tabs + Content) */}
+          <div className="absolute top-4 left-4 z-10 flex flex-col gap-3 w-80 pointer-events-none">
+            
+            {/* Tabs */}
+            <div className="flex bg-white/90 backdrop-blur-md rounded-xl p-1.5 shadow-md border border-gray-200 pointer-events-auto">
+              <button 
+                onClick={() => setActiveTab('graph')}
+                className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
+                  activeTab === 'graph' 
+                    ? 'bg-white shadow-sm text-blue-600' 
+                    : 'text-gray-500 hover:bg-gray-50'
+                }`}
+              >
+                노드 시각화
+              </button>
+              <button 
+                onClick={() => setActiveTab('quiz')}
+                className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
+                  activeTab === 'quiz' 
+                    ? 'bg-white shadow-sm text-blue-600' 
+                    : 'text-gray-500 hover:bg-gray-50'
+                }`}
+              >
+                기출문제 풀이
+              </button>
+            </div>
+
+            {/* Tab Content */}
+            {activeTab === 'graph' && (
+              <div className="bg-white/95 backdrop-blur-md border border-gray-200 rounded-2xl p-5 shadow-lg pointer-events-auto animate-in slide-in-from-top-2 fade-in duration-200">
+                <h2 className="text-sm font-bold text-gray-800 mb-4 border-b pb-2 flex items-center gap-2">
+                  <Bookmark size={16} className="text-gray-500"/> 노드 시각화 필터
+                </h2>
+                <div className="space-y-3">
+                  <div className="flex flex-col gap-2 p-2 rounded-lg border border-purple-100 bg-purple-50/50">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={showExamTopics} 
+                        onChange={(e) => setShowExamTopics(e.target.checked)}
+                        className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
+                      />
+                      <span className="text-sm font-bold text-purple-800 flex items-center gap-2">
+                        <Bookmark size={14} className="text-purple-600"/> 기출문제 영역만 보기
+                      </span>
+                    </label>
+                    
+                    {showExamTopics && availableYears.length > 0 && (
+                      <div className="ml-7 flex items-center gap-2 animate-in slide-in-from-top-1 fade-in">
+                        <span className="text-[11px] text-purple-700 font-medium">연도 필터:</span>
+                        <select 
+                          value={selectedExamYear}
+                          onChange={(e) => setSelectedExamYear(e.target.value)}
+                          className="text-[11px] bg-white border border-purple-200 text-purple-900 rounded px-1.5 py-1 outline-none focus:border-purple-400 font-medium cursor-pointer"
+                        >
+                          <option value="all">전체 년도</option>
+                          {availableYears.map(year => (
+                            <option key={year} value={year}>{year}년</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="h-px bg-gray-100 my-3"></div>
+                  
+                  <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                    <input 
+                      type="checkbox" 
+                      checked={showPerson} 
+                      onChange={(e) => setShowPerson(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                      <User size={16} className="text-[#4D96FF]"/> 인물 노드 강조
+                    </span>
+                  </label>
+                  <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                    <input 
+                      type="checkbox" 
+                      checked={showPlace} 
+                      onChange={(e) => setShowPlace(e.target.checked)}
+                      className="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500"
+                    />
+                    <span className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                      <MapPin size={16} className="text-[#6BCB77]"/> 장소 노드 강조
+                    </span>
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'quiz' && (
+              <div className="bg-white/95 backdrop-blur-md border border-gray-200 rounded-2xl p-5 shadow-lg flex flex-col pointer-events-auto animate-in slide-in-from-top-2 fade-in duration-200 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                <h2 className="text-sm font-bold text-gray-800 mb-4 border-b pb-2 flex justify-between items-center">
+                  📝 AI 추출 기출문제
+                  <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded font-bold shadow-sm border border-green-200">
+                    DB 실시간 연동
+                  </span>
+                </h2>
+                <div className="mb-5 flex-1">
+                  <div className="flex justify-between items-center mb-3">
+                    <p className="text-sm font-bold text-gray-800 leading-relaxed">
+                      Q. {currentQuiz.question}
+                    </p>
+                  </div>
+                  <div className="space-y-2 text-sm text-gray-700">
+                    {currentQuiz.options.map((option, idx) => (
+                      <label 
+                        key={idx}
+                        className={`flex items-start gap-3 cursor-pointer p-3 rounded-lg border transition-all
+                          ${selectedAnswer === idx 
+                            ? 'border-blue-500 bg-blue-50 shadow-sm' 
+                            : 'border-transparent hover:bg-gray-50 hover:border-gray-200'}`}
+                      >
+                        <input 
+                          type="radio" 
+                          name="quiz" 
+                          value={idx}
+                          checked={selectedAnswer === idx}
+                          onChange={() => {
+                            setSelectedAnswer(idx);
+                            setIsAnswerChecked(false);
+                          }}
+                          className="mt-0.5 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="flex-1 text-xs leading-relaxed">{idx + 1}. {option}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="flex gap-2 mt-auto">
+                  <button 
+                    onClick={handleCheckAnswer}
+                    disabled={selectedAnswer === null}
+                    className={`flex-1 font-medium text-sm py-2 px-4 rounded-xl transition-all shadow-sm ${
+                      selectedAnswer === null 
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-gray-900 hover:bg-gray-800 text-white hover:shadow-md active:scale-[0.98]'
+                    }`}
+                  >
+                    정답 확인하기
+                  </button>
+
+                  {displayQuizzes.length > 1 && (
+                    <button 
+                      onClick={handleNextQuiz}
+                      className="bg-blue-50 text-blue-600 hover:bg-blue-100 py-2 px-3 rounded-xl transition-colors font-medium flex items-center justify-center border border-blue-100"
+                      title="다음 문제"
+                    >
+                      <ChevronRight size={18} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Quiz Feedback */}
+                {isAnswerChecked && (
+                  <div className={`mt-4 text-sm p-4 rounded-xl shadow-inner border flex items-start gap-3 animate-in fade-in slide-in-from-top-2 ${
+                    selectedAnswer === currentQuiz.answer 
+                      ? 'bg-green-50 border-green-200 text-green-800'
+                      : 'bg-red-50 border-red-200 text-red-800'
+                  }`}>
+                    {selectedAnswer === currentQuiz.answer ? (
+                      <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    ) : (
+                      <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    )}
+                    <div>
+                      <p className="font-bold mb-1">
+                        {selectedAnswer === currentQuiz.answer ? "정답입니다!" : "오답입니다."}
+                      </p>
+                      <p className="text-xs leading-relaxed opacity-90 mt-1.5">
+                        {currentQuiz.explanation}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           
           {/* Legend */}
           <div className="absolute bottom-6 right-6 bg-white/90 backdrop-blur-md text-xs px-4 py-3 rounded-xl shadow-lg border border-gray-100 flex items-center gap-4 z-10 pointer-events-none">
@@ -353,7 +378,7 @@ export default function Home() {
       {/* Details Popup Modal positioned globally */}
       {selectedItem && modalPos && (
         <div 
-          className="fixed bg-white/95 backdrop-blur-xl border border-gray-200 shadow-xl rounded-2xl p-6 w-80 z-[100] animate-in fade-in zoom-in-95 duration-200"
+          className="fixed bg-white/95 backdrop-blur-xl border border-gray-200 shadow-xl rounded-2xl p-6 w-80 z-[100] animate-in fade-in zoom-in-95 duration-200 pointer-events-auto"
           style={{ 
             left: Math.min(modalPos.x + 15, typeof window !== 'undefined' ? window.innerWidth - 340 : 0),
             top: Math.min(modalPos.y + 15, typeof window !== 'undefined' ? window.innerHeight - 300 : 0)
