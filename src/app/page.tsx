@@ -8,6 +8,7 @@ import { supabase } from "../lib/supabase";
 
 // Dynamically import the ForceGraph component to avoid SSR issues with Canvas
 const HistoryGraph = dynamic(() => import("../components/HistoryGraph"), { ssr: false });
+import MiniMap from "../components/MiniMap";
 
 export default function Home() {
   const [showPerson, setShowPerson] = useState(true);
@@ -31,6 +32,7 @@ export default function Home() {
   // Modal State
   const [selectedItem, setSelectedItem] = useState<{ type: 'node' | 'link', data: GraphNode | GraphLink } | null>(null);
   const [modalPos, setModalPos] = useState<{ x: number, y: number } | null>(null);
+  const [activeLocation, setActiveLocation] = useState<string | null>(null);
 
   const availableYears = React.useMemo(() => {
     const years = new Set<string>();
@@ -111,6 +113,14 @@ export default function Home() {
   const handleNodeClick = (node: GraphNode, event: MouseEvent) => {
     setSelectedItem({ type: 'node', data: node });
     setModalPos({ x: event.clientX, y: event.clientY });
+
+    if (node.group === 'place') {
+      setActiveLocation(node.label);
+    } else if (node.properties?.location) {
+      setActiveLocation(node.properties.location);
+    } else {
+      setActiveLocation(null);
+    }
   };
 
   const handleLinkClick = (link: GraphLink, event: MouseEvent) => {
@@ -121,6 +131,7 @@ export default function Home() {
   const closeModal = () => {
     setSelectedItem(null);
     setModalPos(null);
+    setActiveLocation(null);
   };
 
   const handleCheckAnswer = () => {
@@ -361,7 +372,7 @@ export default function Home() {
           </div>
           
           {/* Legend */}
-          <div className="absolute bottom-6 right-6 bg-white/90 backdrop-blur-md text-xs px-4 py-3 rounded-xl shadow-lg border border-gray-100 flex items-center gap-4 z-10 pointer-events-none">
+          <div className="absolute bottom-6 left-6 bg-white/90 backdrop-blur-md text-xs px-4 py-3 rounded-xl shadow-lg border border-gray-100 flex items-center gap-4 z-10 pointer-events-none">
             <span className="flex items-center gap-1.5 font-medium text-gray-700">
               <span className="inline-block w-3.5 h-3.5 rounded-sm bg-[#FF6B6B]"></span> 사건
             </span>
@@ -371,6 +382,11 @@ export default function Home() {
             <span className="flex items-center gap-1.5 font-medium text-gray-700">
               <span className="inline-block w-3.5 h-3.5 rounded-full bg-[#6BCB77]"></span> 장소
             </span>
+          </div>
+
+          {/* MiniMap */}
+          <div className="absolute bottom-6 right-6 z-10 pointer-events-auto">
+            <MiniMap locationName={activeLocation} />
           </div>
         </section>
       </main>
