@@ -50,7 +50,8 @@ export default function Home() {
         }
 
         if (nodeRes.data && nodeRes.data.length > 0) {
-          setNodes(nodeRes.data.map(n => ({
+          const validNodes = nodeRes.data.filter(n => !n.label.includes('test'));
+          setNodes(validNodes.map(n => ({
             id: n.id,
             label: n.label,
             group: n.group as NodeGroup,
@@ -59,7 +60,7 @@ export default function Home() {
         }
 
         if (edgeRes.data && edgeRes.data.length > 0) {
-          const validEdges = edgeRes.data.filter(e => e.source_id && e.target_id);
+          const validEdges = edgeRes.data.filter(e => e.source_id && e.target_id && !(e.label || '').includes('test'));
           setEdges(validEdges.map(e => ({
             source: e.source_id,
             target: e.target_id,
