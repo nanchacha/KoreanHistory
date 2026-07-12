@@ -146,6 +146,19 @@ export default function Home() {
           }
         }
         
+        // 연결된 장소 노드가 없다면, 노드의 라벨이나 요약에 포함된 지명 키워드를 활용
+        if (!foundPlaceLabel) {
+          const searchString = (node.label + " " + (node.properties?.summary || "")).toLowerCase();
+          // 주요 키워드 하드코딩 또는 간단한 매칭 (한성, 경복, 평양 등)
+          const keywords = ["한성", "경복", "서울", "평양", "의주", "강화", "충주", "탄금대", "진주", "동래", "부산", "제주", "울릉", "안동", "광주", "전주", "러시아 공사관", "명량", "해남", "진도", "한산", "통영", "노량", "남해"];
+          for (const kw of keywords) {
+            if (searchString.includes(kw)) {
+              foundPlaceLabel = kw === "러시아 공사관" ? "한성(서울)" : kw;
+              break;
+            }
+          }
+        }
+        
         setActiveLocation(foundPlaceLabel);
       }
     }
@@ -471,6 +484,40 @@ export default function Home() {
             </div>
           )}
 
+          {/* Person Details Panel (Just Above Bottom Left) */}
+          {selectedItem?.type === 'node' && selectedItem.data.group === 'person' && (
+            <div className="absolute bottom-[320px] md:bottom-[360px] left-3 md:left-6 w-64 md:w-72 bg-white/95 backdrop-blur-xl border border-gray-200 shadow-2xl rounded-xl md:rounded-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-left-4 duration-300 pointer-events-auto">
+              <button 
+                onClick={closeModal}
+                className="absolute top-2 right-2 md:top-3 md:right-3 bg-black/50 text-white hover:bg-black/70 transition-colors p-1 md:p-1.5 rounded-full z-10"
+              >
+                <X className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              </button>
+              
+              <div className="relative h-40 md:h-48 w-full bg-gray-900 flex justify-center items-center overflow-hidden">
+                <img 
+                  src="/historical_person.png" 
+                  alt="Historical Person Portrait" 
+                  className="w-full h-full object-cover opacity-80"
+                />
+                <div className="absolute bottom-0 w-full bg-gradient-to-t from-black/90 via-black/60 to-transparent p-3 pt-12 text-center">
+                  <h3 className="text-white font-bold text-lg md:text-xl drop-shadow-md">
+                    {selectedItem.data.label.replace('\n', ' ')}
+                  </h3>
+                </div>
+              </div>
+              
+              <div className="p-4 md:p-5">
+                <div className="inline-block bg-blue-50 text-blue-700 border border-blue-200 text-[10px] md:text-xs font-bold px-2 py-0.5 rounded-full mb-2">
+                  역사적 인물
+                </div>
+                <p className="text-xs md:text-sm text-gray-700 leading-relaxed">
+                  {selectedItem.data.properties?.description || "상세 설명이 없습니다."}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* MiniMap */}
           <div className="absolute bottom-20 right-3 md:bottom-6 md:right-6 z-10 pointer-events-auto scale-75 md:scale-100 origin-bottom-right transition-all">
             <MiniMap locationName={activeLocation} />
@@ -478,8 +525,8 @@ export default function Home() {
         </section>
       </main>
 
-      {/* Details Popup Modal positioned globally (Only for non-event items) */}
-      {selectedItem && modalPos && !(selectedItem.type === 'node' && selectedItem.data.group === 'event') && (
+      {/* Details Popup Modal positioned globally (Only for non-event/non-person items) */}
+      {selectedItem && modalPos && !(selectedItem.type === 'node' && (selectedItem.data.group === 'event' || selectedItem.data.group === 'person')) && (
         <div 
           className="fixed bg-white/95 backdrop-blur-xl border border-gray-200 shadow-xl rounded-xl md:rounded-2xl p-4 md:p-6 w-[260px] md:w-80 z-[100] animate-in fade-in zoom-in-95 duration-200 pointer-events-auto"
           style={{ 
