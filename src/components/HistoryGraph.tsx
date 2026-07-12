@@ -118,42 +118,29 @@ export default function HistoryGraph({ nodes, links, onNodeClick, onLinkClick, h
   const graphData = React.useMemo(() => ({ nodes, links }), [nodes, links]);
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [lastQuery, setLastQuery] = useState("");
-  const [searchIndex, setSearchIndex] = useState(0);
-  const [totalResults, setTotalResults] = useState(0);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(5);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim() || !fgRef.current) return;
-    
+  const searchResults = React.useMemo(() => {
+    if (!searchQuery.trim()) return [];
     const query = searchQuery.toLowerCase();
     
-    const matchingEdges = links.filter(l => l.label && l.label.toLowerCase().includes(query));
-    const matchingNodes = nodes.filter(n => n.label.toLowerCase().includes(query));
-    const total = matchingEdges.length + matchingNodes.length;
+    const matchingEdges = links.filter(l => l.label && l.label.toLowerCase().includes(query)).map(l => ({ type: 'edge', data: l }));
+    const matchingNodes = nodes.filter(n => n.label.toLowerCase().includes(query)).map(n => ({ type: 'node', data: n }));
     
-    setTotalResults(total);
+    return [...matchingEdges, ...matchingNodes];
+  }, [searchQuery, links, nodes]);
+
+  useEffect(() => {
+    setVisibleCount(5);
+    setIsDropdownOpen(searchResults.length > 0 && searchQuery.trim().length > 0);
+  }, [searchQuery, searchResults.length]);
+
+  const handleSelectItem = (item: any) => {
+    if (!fgRef.current) return;
     
-    if (total === 0) {
-      alert("검색 결과가 없습니다.");
-      setSearchIndex(0);
-      setLastQuery(query);
-      return;
-    }
-    
-    let currentIndex = searchIndex;
-    if (query !== lastQuery) {
-      currentIndex = 0;
-      setLastQuery(query);
-    } else {
-      currentIndex = (currentIndex + 1) % total;
-    }
-    
-    setSearchIndex(currentIndex);
-    
-    if (currentIndex < matchingEdges.length) {
-      // It's an edge
-      const foundEdge = matchingEdges[currentIndex];
+    if (item.type === 'edge') {
+      const foundEdge = item.data;
       const source: any = typeof foundEdge.source === 'object' ? foundEdge.source : nodes.find(n => n.id === foundEdge.source);
       const target: any = typeof foundEdge.target === 'object' ? foundEdge.target : nodes.find(n => n.id === foundEdge.target);
       
@@ -164,18 +151,26 @@ export default function HistoryGraph({ nodes, links, onNodeClick, onLinkClick, h
         fgRef.current.zoom(6, 1000);
       }
     } else {
-      // It's a node
-      const nodeIndex = currentIndex - matchingEdges.length;
-      const foundNode: any = matchingNodes[nodeIndex];
+      const foundNode = item.data;
       if (foundNode && foundNode.x !== undefined) {
         fgRef.current.centerAt(foundNode.x, foundNode.y, 1000);
         fgRef.current.zoom(6, 1000);
       }
     }
+    setIsDropdownOpen(false);
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchResults.length > 0) {
+      handleSelectItem(searchResults[0]);
+    } else {
+      alert("검색 결과가 없습니다.");
+    }
   };
 
   return (
-    <div ref={containerRef} className="w-full h-full relative">
+    <div ref={containerRef} className="w-full h-full relative" onClick={() => setIsDropdownOpen(false)}>
       <ForceGraph2D
         ref={fgRef}
         width={dimensions.width}
@@ -192,37 +187,59 @@ export default function HistoryGraph({ nodes, links, onNodeClick, onLinkClick, h
         onLinkClick={(link, event) => onLinkClick(link as GraphLink, event as MouseEvent)}
       />
       
-      {/* Search Bar */}
-      <form 
-        onSubmit={handleSearch}
-        className="absolute top-4 right-4 z-10 flex items-center bg-white/90 backdrop-blur-md rounded-xl shadow-md border border-gray-200 overflow-hidden"
-      >
-        <div className="relative flex items-center">
+      {/* Search Bar & Dropdown */}
+      <div className="absolute top-4 right-4 z-10 flex flex-col w-64" onClick={(e) => e.stopPropagation()}>
+        <form 
+          onSubmit={handleSearch}
+          className="flex items-center bg-white/90 backdrop-blur-md rounded-xl shadow-md border border-gray-200 overflow-hidden"
+        >
           <input 
             type="text" 
             value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              if (e.target.value.toLowerCase() !== lastQuery) {
-                setTotalResults(0);
-              }
-            }}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => { if (searchResults.length > 0) setIsDropdownOpen(true); }}
             placeholder="노드 또는 엣지 검색..."
-            className="w-48 px-4 py-2 text-sm text-gray-700 bg-transparent outline-none placeholder-gray-400 pr-12"
+            className="flex-1 px-4 py-2 text-sm text-gray-700 bg-transparent outline-none placeholder-gray-400"
           />
-          {totalResults > 0 && searchQuery.toLowerCase() === lastQuery && (
-            <span className="absolute right-3 text-xs font-medium text-gray-400 pointer-events-none">
-              {searchIndex + 1}/{totalResults}
-            </span>
-          )}
-        </div>
-        <button 
-          type="submit" 
-          className="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 transition-colors border-l border-gray-200 font-medium text-sm"
-        >
-          검색
-        </button>
-      </form>
-    </div>
+          <button 
+            type="submit" 
+            className="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 transition-colors border-l border-gray-200 font-medium text-sm"
+          >
+            검색
+          </button>
+        </form>
+
+        {/* Dropdown Results */}
+        {isDropdownOpen && searchResults.length > 0 && (
+          <div className="w-full mt-2 bg-white/95 backdrop-blur-md rounded-xl shadow-lg border border-gray-200 overflow-hidden text-sm flex flex-col max-h-[300px] overflow-y-auto custom-scrollbar">
+            {searchResults.slice(0, visibleCount).map((item, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => handleSelectItem(item)}
+                className="text-left px-4 py-3 hover:bg-blue-50 border-b border-gray-100 last:border-0 transition-colors flex items-center justify-between"
+              >
+                <span className="font-medium text-gray-800 truncate pr-2">
+                  {item.data.label}
+                </span>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold whitespace-nowrap ${item.type === 'edge' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                  {item.type === 'edge' ? '관계' : '노드'}
+                </span>
+              </button>
+            ))}
+            
+            {visibleCount < searchResults.length && (
+              <button 
+                type="button"
+                onClick={() => setVisibleCount(prev => prev + 5)}
+                className="w-full py-3 bg-gray-50 hover:bg-gray-100 text-gray-500 font-medium flex items-center justify-center gap-1.5 transition-colors text-xs"
+              >
+                더보기 ({searchResults.length - visibleCount}개 남음) 
+                <span className="text-[10px]">▼</span>
+              </button>
+            )}
+          </div>
+        )}
+      </div>
   );
 }
