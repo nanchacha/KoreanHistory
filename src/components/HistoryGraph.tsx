@@ -115,13 +115,15 @@ export default function HistoryGraph({ nodes, links, onNodeClick, onLinkClick, h
     return "#9ca3af"; // Normal gray
   }, [nodes, isNodeDimmed]);
 
+  const graphData = React.useMemo(() => ({ nodes, links }), [nodes, links]);
+
   return (
     <div ref={containerRef} className="w-full h-full">
       <ForceGraph2D
         ref={fgRef}
         width={dimensions.width}
         height={dimensions.height}
-        graphData={{ nodes, links }}
+        graphData={graphData}
         nodeLabel="label"
         nodeCanvasObject={paintNode}
         nodeRelSize={8}
@@ -131,8 +133,6 @@ export default function HistoryGraph({ nodes, links, onNodeClick, onLinkClick, h
         linkDirectionalArrowRelPos={1}
         onNodeClick={(node, event) => onNodeClick(node as GraphNode, event as MouseEvent)}
         onLinkClick={(link, event) => onLinkClick(link as GraphLink, event as MouseEvent)}
-        d3VelocityDecay={0.3}
-        cooldownTicks={100}
       />
     </div>
   );
