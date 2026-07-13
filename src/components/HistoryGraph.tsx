@@ -65,8 +65,8 @@ export default function HistoryGraph({ nodes, links, onNodeClick, onLinkClick, h
     nodes.forEach(n => adjList.set(n.id, []));
     
     links.forEach(link => {
-      const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
-      const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+      const sourceId = typeof link.source === 'object' ? (link.source as unknown as GraphNode).id : link.source;
+      const targetId = typeof link.target === 'object' ? (link.target as unknown as GraphNode).id : link.target;
       
       if (adjList.has(sourceId)) adjList.get(sourceId)!.push(targetId);
       if (adjList.has(targetId)) adjList.get(targetId)!.push(sourceId);

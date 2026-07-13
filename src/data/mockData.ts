@@ -10,6 +10,10 @@ export interface GraphNode {
     description?: string;
     location?: string;
   };
+  x?: number;
+  y?: number;
+  fx?: number;
+  fy?: number;
 }
 
 export interface GraphLink {

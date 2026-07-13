@@ -31,7 +31,7 @@ export default function Home() {
   const [highlightNodes, setHighlightNodes] = useState<Set<string>>(new Set());
 
   // Modal State
-  const [selectedItem, setSelectedItem] = useState<{ type: 'node' | 'link', data: GraphNode | GraphLink } | null>(null);
+  const [selectedItem, setSelectedItem] = useState<{ type: 'node', data: GraphNode } | { type: 'link', data: GraphLink } | null>(null);
   const [modalPos, setModalPos] = useState<{ x: number, y: number } | null>(null);
   const [activeLocation, setActiveLocation] = useState<string | null>(null);
 
